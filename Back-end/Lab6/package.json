@@ -4,11 +4,17 @@
   "description": "",
   "main": "express_server.js",
   "scripts": {
+    "start": "node ExpressServer.js",
+    "dev": "node --watch ExpressServer.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "module"
-  
+  "type": "module",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.1",
+    "express": "^5.2.1"
+  }
 }

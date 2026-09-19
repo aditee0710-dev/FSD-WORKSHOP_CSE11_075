@@ -1,159 +1,205 @@
 import express from "express";
-import fs from "fs";
+import os from "os";
+import dotenv from "dotenv";
+import cors from "cors";
+
+dotenv.config();
+
 const app = express();
-const port = 7000;
+app.use(cors());
 app.use(express.json());
 
-const file = "./users.json";
-// READ FILE
-function getData() {
-    const data = fs.readFileSync(file, "utf-8");
-    return JSON.parse(data);
-}
-// WRITE FILE
-function saveData(data) {
-    fs.writeFileSync(file, JSON.stringify(data, null, 2));
-}
+let userData = [
+  { id: 1, name: "Akshat", email: "avs@gmail.com" },
+  { id: 2, name: "Akarsh", email: "akarsh@gmail.com" },
+  { id: 3, name: "Arsh", email: "arsh@gmail.com" },
+  { id: 4, name: "Ashwani", email: "ashwani@gmail.com" },
+];
+
+let registeredData = [
+  { id: 1, name: "Akshat Kumar", email: "ak@gmail.com" },
+  { id: 2, name: "Akarsh", email: "akarsh@gmail.com" },
+  { id: 3, name: "Arsh", email: "arsh@gmail.com" },
+  { id: 4, name: "Anwar", email: "anwar@gmail.com" },
+];
+
+app.get("/", (req, res) => {
+  try {
+    res.status(200).json({ msg: "Welcome to Express Server" });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Internal Server Error", details: error.message });
+  }
+});
+
+app.get("/msg", (req, res) => {
+  try {
+    res.status(200).json({ msg: "Welcome to Express ServerMessage Dropbox" });
+  } catch (error) {
+    res.status(500).json({ error: "Message Error", details: error.message });
+  }
+});
+
+app.get("/sys", (req, res) => {
+  try {
+    res.status(200).json({
+      msg: "System Information",
+      info: { platform: os.platform(), uptime: os.uptime() },
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Internal Server Error", details: error.message });
+  }
+});
 
 app.get("/user", (req, res) => {
-    try {
-        const users = getData();
-
-        res.status(200).json({
-            message: "Users fetched successfully",
-            users
-        });
-    }
-    catch (error) {
-        res.status(500).json({
-            message: "Error",
-            error: error.message
-        });
-    }
+  try {
+    res.status(200).json({ msg: "User info retrieved", data: userData });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Internal Server Error", details: error.message });
+  }
 });
-// user by id
-app.get("/user/:id", (req, res) => {
-    try {
-        const users = getData();
 
-        const id = req.params.id;
-
-        const user = users.find((u) => u.id == id);
-
-        if (!user) {
-            return res.status(404).json({
-                message: "User not found"
-            });
-        }
-
-        res.status(200).json({
-            message: "User found",
-            user
-        });
-    }
-    catch (error) {
-        res.status(500).json({
-            message: "Error",
-            error: error.message
-        });
-    }
-});
-// user creation
 app.post("/create", (req, res) => {
-    try {
-        const users = getData();
+  try {
+    const { name, email } = req.body;
 
-        const { id, name, dept, classs } = req.body;
-
-        const newUser = {
-            id,
-            name,
-            dept,
-            classs
-        };
-
-        users.push(newUser);
-
-        saveData(users);
-
-        res.status(201).json({
-            message: "User created successfully",
-            user: newUser
-        });
+    if (!name || !email) {
+      return res
+        .status(400)
+        .json({ error: "Missing required fields: name or email" });
     }
-    catch (error) {
-        res.status(500).json({
-            message: "Error",
-            error: error.message
-        });
-    }
+    const newUser = { id: userData.length + 1, name, email };
+    userData.push(newUser);
+    res.status(201).json({
+      msg: "User created successfully",
+      data: newUser,
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Internal Server Error", details: error.message });
+  }
 });
-// user update
-app.put("/edit/:id", (req, res) => {
-    try {
-        const users = getData();
 
-        const id = req.params.id;
+app.get("/user/:id", (req, res) => {
+  const userId = parseInt(req.params.id);
+  const user = userData.find((u) => u.id === userId);
 
-        const index = users.findIndex((u) => u.id == id);
+  if (!user) {
+    return res.status(404).json({ error: "User not found" });
+  }
 
-        if (index === -1) {
-            return res.status(404).json({
-                message: "User not found"
-            });
-        }
-
-        const { name, dept, classs } = req.body;
-
-        users[index].name = name;
-        users[index].dept = dept;
-        users[index].classs = classs;
-
-        saveData(users);
-
-        res.status(200).json({
-            message: "User updated successfully",
-            user: users[index]
-        });
-    }
-    catch (error) {
-        res.status(500).json({
-            message: "Error",
-            error: error.message
-        });
-    }
+  res.status(200).json({ msg: "User retrieved successfully", data: user });
 });
-// delete user
-app.delete("/delete/:id", (req, res) => {
-    try {
-        const users = getData();
 
-        const id = req.params.id;
+app.put("/user/:id", (req, res) => {
+  const userId = parseInt(req.params.id);
+  const user = userData.find((u) => u.id === userId);
 
-        const index = users.findIndex((u) => u.id == id);
+  if (!user) {
+    return res.status(404).json({ error: "User not found" });
+  }
 
-        if (index === -1) {
-            return res.status(404).json({
-                message: "User not found"
-            });
-        }
+  if (req.body.name) {
+    user.name = req.body.name;
+  }
 
-        const deletedUser = users.splice(index, 1);
+  if (req.body.email) {
+    user.email = req.body.email;
+  }
 
-        saveData(users);
-
-        res.status(200).json({
-            message: "User deleted successfully",
-            user: deletedUser[0]
-        });
-    }
-    catch (error) {
-        res.status(500).json({
-            message: "Error",
-            error: error.message
-        });
-    }
+  res.status(200).json({ msg: "User updated successfully", data: user });
 });
+
+app.delete("/user/:id", (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    const exists = userData.some((u) => u.id === userId);
+
+    if (!exists) return res.status(404).json({ error: "User not found" });
+
+    userData = userData.filter((u) => u.id !== userId);
+    res.status(200).json({ msg: `User ${userId} deleted successfully` });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Internal Server Error", details: error.message });
+  }
+});
+
+app.get("/registered", (req, res) => {
+  try {
+    res
+      .status(200)
+      .json({ msg: "Registered data retrieved", data: registeredData });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Internal Server Error", details: error.message });
+  }
+});
+
+app.post("/registered", (req, res) => {
+  try {
+    const { id, name, email } = req.body;
+
+    if (!id || !name || !email) {
+      return res
+        .status(400)
+        .json({ error: "Missing required fields: id, name, or email" });
+    }
+
+    if (registeredData.some((u) => u.id === id)) {
+      return res
+        .status(409)
+        .json({ error: "A user with this ID is already registered" });
+    }
+
+    const newUser = { id, name, email };
+    registeredData.push(newUser);
+    res
+      .status(201)
+      .json({ msg: "User registered successfully", data: newUser });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Internal Server Error", details: error.message });
+  }
+});
+
+const port = process.env.PORT || 3000;
+
+app.use(express.static("public"));
+
+app.post("/login", (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required" });
+    }
+
+    const allUsers = [...userData, ...registeredData];
+    const foundUser = allUsers.find((u) => u.email.toLowerCase() === email.toLowerCase());
+
+    if (!foundUser) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    res.status(200).json({
+      msg: `Welcome back, ${foundUser.name}`,
+      user: foundUser,
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error", details: error.message });
+  }
+});
+
 app.listen(port, () => {
-    console.log(`Running on server ${port}`);
+    console.log(`Server running on http://localhost:${port}`);
 });
